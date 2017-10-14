@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">WhatsappOne</string>
+
+    <string name="notification_permission_text">
+        This App requires permission to access WhatsApp messages.
+        To grant the permission, click on Settings in the top right corner and Check the
+        permission checkbox for the App.
+    </string>
+
+    <!-- Menu related -->
+    <string name="title_settings">Settings</string>
+
+    <!-- Preference Screen Strings -->
+    <!-- Category Name -->
+    <string name="pref_config">Permissions</string>
+    <!-- Preference item title -->
+    <string name="pref_config_setting">WhatsApp Message Notifications</string>
+    <!-- Summary of the preference -->
+    <string name="pref_config_setting_summary">The App requires permission to access and display WhatsApp messages. Tap to allow it on the Settings Page.</string>
+
+</resources>
