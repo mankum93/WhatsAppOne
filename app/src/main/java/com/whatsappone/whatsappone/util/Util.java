@@ -1,4 +1,4 @@
-package com.whatsappone.whatsappone;
+package com.whatsappone.whatsappone.util;
 
 import android.content.ComponentName;
 import android.content.Context;

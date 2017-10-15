@@ -3,13 +3,17 @@
     <color name="colorPrimary">#009688</color>
     <color name="colorPrimaryDark">#00796B</color>
     <color name="colorPrimaryLight">#B2DFDB</color>
+    <color name="colorPrimaryLight1">#D2DFDB</color>
     <color name="colorAccent">#FFC107</color>
     <color name="colorAccentLight">#FFEB3B</color>
+    <color name="colorAccentLight1">#ede59f</color>
 
     <color name="primaryText">#212121</color>
     <color name="secondaryText">#757575</color>
     <color name="icons">#FFFFFF</color>
     <color name="divider">#BDBDBD</color>
 
+    <color name="navyBlue">#000080</color>
+    <color name="navyBlue1">#0606da</color>
 
 </resources>

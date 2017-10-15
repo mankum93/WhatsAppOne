@@ -15,7 +15,7 @@
     android:layout_marginRight="8dp"
     android:layout_marginEnd="8dp"
     android:padding="4dp"
-    android:background="@drawable/rounded_corners"
+    android:background="@drawable/rounded_shape"
     app:layout_constraintBottom_toBottomOf="parent"
     app:layout_constraintLeft_toLeftOf="parent"
     app:layout_constraintRight_toRightOf="parent"

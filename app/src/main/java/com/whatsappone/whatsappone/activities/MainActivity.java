@@ -6,16 +6,23 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
 import com.whatsappone.whatsappone.R;
-import com.whatsappone.whatsappone.Util;
-import com.whatsappone.whatsappone.activities.WhatsappOnePreferenceActivity;
+import com.whatsappone.whatsappone.util.Util;
+import com.whatsappone.whatsappone.util.ViewUtils;
+import com.whatsappone.whatsappone.services.ChatHeadsService;
+
+import static com.whatsappone.whatsappone.services.ChatHeadsService.EXTRA_ACTION_BAR_HEIGHT;
+import static com.whatsappone.whatsappone.services.ChatHeadsService.EXTRA_STATUS_BAR_HEIGHT;
 
 public class MainActivity extends AppCompatActivity {
 
     private boolean mIsPermissionPromptShowing = false;
     private ViewGroup root;
+    private Button mChatHeadButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,17 +32,46 @@ public class MainActivity extends AppCompatActivity {
         // Parent Container for the message
         root = ((ViewGroup) findViewById(R.id.rootView));
 
+        // Setup the Chat head button
+        mChatHeadButton = ((Button) findViewById(R.id.btn_chat_head_launcher));
+        setupChatHeadButton();
+
         // Check if we have the permission to Access Notifications from other Apps?
         if(!Util.haveNotificationAccessPermission(this.getApplicationContext())){
 
             // Display a message in this regard.
-
-            LayoutInflater.from(this).inflate(R.layout.layout_msg_notifications_permission, root, true);
-
+            setupPermissionPrompt();
             mIsPermissionPromptShowing = true;
+        }
+        else{
+            // Enable it
+            mChatHeadButton.setEnabled(true);
         }
 
         // TODO: We can show a welcome message irrespective of any status.
+    }
+
+    private void setupPermissionPrompt(){
+        View permissionPrompt = LayoutInflater.from(this).inflate(R.layout.layout_msg_notifications_permission, root, false);
+        // Add to root
+        root.addView(permissionPrompt, 1);
+    }
+
+    private void setupChatHeadButton(){
+
+        // Listener to launch the service
+        mChatHeadButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Launch the Chat Head Service
+                Intent intent = new Intent(getApplicationContext(), ChatHeadsService.class);
+                intent.putExtra(EXTRA_STATUS_BAR_HEIGHT, ViewUtils.getStatusBarHeight(MainActivity.this));
+                intent.putExtra(EXTRA_ACTION_BAR_HEIGHT, ViewUtils.getActionBarHeight(MainActivity.this, getTheme()));
+                startService(intent);
+
+                //finish();
+            }
+        });
     }
 
     @Override
@@ -46,18 +82,28 @@ public class MainActivity extends AppCompatActivity {
 
         // Check if we have the permission to Access Notifications from other Apps?
         if(!Util.haveNotificationAccessPermission(this.getApplicationContext())){
-            // Display a message in this regard.
 
-            // Parent Container for the message
-            LayoutInflater.from(this).inflate(R.layout.layout_msg_notifications_permission, root, true);
+            // Disable the Chat head Button
+            mChatHeadButton.setEnabled(false);
+
+            if(!mIsPermissionPromptShowing){
+                // Previously, the prompt had not been showing.
+
+                // Display a message in this regard.
+                setupPermissionPrompt();
+            }
 
             mIsPermissionPromptShowing = true;
         }
         else{
+            // Enable the Chat head Button
+            mChatHeadButton.setEnabled(true);
+
             if(mIsPermissionPromptShowing){
+
                 // Previously, we showed the Notification prompt to the user and he has
                 // permitted us with our Application in background. Remove the prompt.
-                root.removeViewAt(0);
+                root.removeViewAt(1);
 
                 // Reset the prompt flag
                 mIsPermissionPromptShowing = false;

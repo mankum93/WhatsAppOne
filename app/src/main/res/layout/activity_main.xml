@@ -8,4 +8,20 @@
     android:layout_height="match_parent"
     tools:context="com.whatsappone.whatsappone.activities.MainActivity">
 
+    <Button
+        android:id="@+id/btn_chat_head_launcher"
+        android:background="@color/colorAccent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:paddingLeft="8dp"
+        android:paddingStart="8dp"
+        android:paddingRight="8dp"
+        android:paddingEnd="8dp"
+        android:enabled="false"
+        android:text="Launch Chat Head"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
 </android.support.constraint.ConstraintLayout>

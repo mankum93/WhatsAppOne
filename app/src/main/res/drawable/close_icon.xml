@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:drawable="@drawable/ic_cancel">
+        <color android:color="@color/cancel_button_color_selector"/>
+    </item>
+
+</selector>

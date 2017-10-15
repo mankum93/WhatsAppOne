@@ -94,20 +94,20 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
 
     public static void insertContactToDb(SQLiteDatabase db, Contact contact){
 
-        db.insertOrThrow(ContactSchema.ContactTable.NAME, null, getContentValues(contact));
+        db.insertWithOnConflict(ContactSchema.ContactTable.NAME, null, getContentValues(contact), SQLiteDatabase.CONFLICT_IGNORE);
     }
 
     public static void insertContactsToDb(SQLiteDatabase db, Contact[] contacts){
 
         for(Contact contact : contacts){
-            db.insertOrThrow(ContactSchema.ContactTable.NAME, null, getContentValues(contact));
+            db.insertWithOnConflict(ContactSchema.ContactTable.NAME, null, getContentValues(contact), SQLiteDatabase.CONFLICT_IGNORE);
         }
     }
 
     public static void insertContactsToDb(SQLiteDatabase db, List<Contact> contacts){
 
         for(Contact contact : contacts){
-            db.insertOrThrow(ContactSchema.ContactTable.NAME, null, getContentValues(contact));
+            db.insertWithOnConflict(ContactSchema.ContactTable.NAME, null, getContentValues(contact), SQLiteDatabase.CONFLICT_IGNORE);
         }
     }
 

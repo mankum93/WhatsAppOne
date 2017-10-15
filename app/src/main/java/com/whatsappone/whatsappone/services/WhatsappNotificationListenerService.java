@@ -2,19 +2,21 @@ package com.whatsappone.whatsappone.services;
 
 import android.app.Notification;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.support.annotation.RequiresApi;
-import android.support.v4.BuildConfig;
-import android.util.Log;
+import android.support.v4.content.LocalBroadcastManager;
 
-import com.whatsappone.whatsappone.Util;
-
-import java.util.regex.Pattern;
+import com.whatsappone.whatsappone.WhatsappOneApplication;
+import com.whatsappone.whatsappone.database.ContactsDbHelper;
 
 import model.Contact;
 import model.WhatsAppMessage;
+
+import static com.whatsappone.whatsappone.services.ChatHeadsService.ACTION_NEW_MESSAGE;
+import static com.whatsappone.whatsappone.services.ChatHeadsService.EXTRA_NEW_MESSAGE;
 
 /**
  * Created by DJ on 10/14/2017.
@@ -29,10 +31,20 @@ import model.WhatsAppMessage;
  * Note: We use the standard Notification listening mechanism on API level >= 19. For less than
  * 19(18 actually but the field Notification.mExtras is not available so the info. too is not
  * and we are compelled to bump the required version to +1),
- * there is an AccessibilityService that tries fetching the messages from Whatsapp.
+ * there is an AccessibilityService that tries fetching the messages from WhatsApp.
  */
 @RequiresApi(19)
 public class WhatsappNotificationListenerService extends NotificationListenerService {
+
+    private SQLiteDatabase db;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        // Get the Single Db instance
+        db = ((WhatsappOneApplication) this.getApplication()).dbInstance;
+    }
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
@@ -49,6 +61,13 @@ public class WhatsappNotificationListenerService extends NotificationListenerSer
                 Contact contact = buildContact(message);
 
                 // Write it to the Database and update the UI.
+                ContactsDbHelper.insertContactToDb(db, contact);
+                ContactsDbHelper.insertMessageToDb(db, message);
+
+                // Update the UI; Send a Broadcast
+                Intent intent = new Intent(ACTION_NEW_MESSAGE);
+                intent.putExtra(EXTRA_NEW_MESSAGE, message);
+                LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
             }
         }
     }
@@ -66,9 +85,6 @@ public class WhatsappNotificationListenerService extends NotificationListenerSer
         // Format is, 918368978651@s.whatsapp.net
         String tag = statusBarNotification.getTag();
 
-        // Message to be built
-        WhatsAppMessage message = new WhatsAppMessage();
-
         Bundle extras = notification.extras;
         //Util.listAllNotificationExtraKeysAndValues(extras);
         // Could be a Name or a Number - If the sender's WhatsApp contact has a name,
@@ -80,6 +96,9 @@ public class WhatsappNotificationListenerService extends NotificationListenerSer
         if(title == null || title.equals("WhatsApp") || tag == null){
             return null;
         }
+
+        // Message to be built
+        WhatsAppMessage message = new WhatsAppMessage();
 
         String phoneNo = tag.replace("@s.whatsapp.net", "");
 
