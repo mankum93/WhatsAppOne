@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.support.annotation.RequiresApi;
 import android.util.Log;
 
 import com.whatsappone.whatsappone.services.WhatsappNotificationListenerService;
@@ -31,6 +32,17 @@ public class Util {
         final boolean enabled = flat != null && flat.contains(cn.flattenToString());
 
         return enabled;
+    }
+
+    /**
+     * Check if we have the permission to draw over other Apps - called Draw overlay permission.
+     *
+     * @param context Context
+     * @return true if we have been the granted access to it.
+     */
+    @RequiresApi(23)
+    public static boolean haveDrawOverlayPermission(Context context){
+        return Settings.canDrawOverlays(context);
     }
 
     public static void listAllNotificationExtraKeysAndValues(Bundle bundle){

@@ -3,12 +3,21 @@
 
 
     <PreferenceCategory android:title="@string/pref_config" >
+
         <Preference
-            android:summary="@string/pref_config_setting_summary"
-            android:title="@string/pref_config_setting" >
+            android:summary="@string/pref_notification_listen_setting_summary"
+            android:title="@string/pref_notification_listen_setting_title" >
             <intent android:action="android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS">
             </intent>
         </Preference>
+
+        <Preference
+            android:summary="@string/pref_draw_overlay_setting_summary"
+            android:title="@string/pref_draw_overlay_setting_title" >
+            <intent android:action="android.settings.action.MANAGE_OVERLAY_PERMISSION">
+            </intent>
+        </Preference>
+
     </PreferenceCategory>
 
 </PreferenceScreen>

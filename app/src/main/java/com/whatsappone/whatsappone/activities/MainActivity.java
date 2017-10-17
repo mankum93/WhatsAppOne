@@ -1,6 +1,7 @@
 package com.whatsappone.whatsappone.activities;
 
 import android.content.Intent;
+import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -37,11 +38,10 @@ public class MainActivity extends AppCompatActivity {
         setupChatHeadButton();
 
         // Check if we have the permission to Access Notifications from other Apps?
-        if(!Util.haveNotificationAccessPermission(this.getApplicationContext())){
-
+        if(!Util.haveNotificationAccessPermission(this.getApplicationContext())
+                || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Util.haveDrawOverlayPermission(this.getApplicationContext()))){
             // Display a message in this regard.
-            setupPermissionPrompt();
-            mIsPermissionPromptShowing = true;
+            showPermissionPrompt();
         }
         else{
             // Enable it
@@ -51,10 +51,11 @@ public class MainActivity extends AppCompatActivity {
         // TODO: We can show a welcome message irrespective of any status.
     }
 
-    private void setupPermissionPrompt(){
+    private void showPermissionPrompt(){
         View permissionPrompt = LayoutInflater.from(this).inflate(R.layout.layout_msg_notifications_permission, root, false);
         // Add to root
         root.addView(permissionPrompt, 1);
+        mIsPermissionPromptShowing = true;
     }
 
     private void setupChatHeadButton(){
@@ -78,10 +79,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onRestart() {
         super.onRestart();
 
-        // Every time we have to check for permissions. User may have revoked them meanwhile.
+        // Every time we need to check for permissions. User may have revoked them meanwhile.
 
         // Check if we have the permission to Access Notifications from other Apps?
-        if(!Util.haveNotificationAccessPermission(this.getApplicationContext())){
+        if(!Util.haveNotificationAccessPermission(this.getApplicationContext())
+                || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Util.haveDrawOverlayPermission(this.getApplicationContext()))){
 
             // Disable the Chat head Button
             mChatHeadButton.setEnabled(false);
@@ -90,10 +92,8 @@ public class MainActivity extends AppCompatActivity {
                 // Previously, the prompt had not been showing.
 
                 // Display a message in this regard.
-                setupPermissionPrompt();
+                showPermissionPrompt();
             }
-
-            mIsPermissionPromptShowing = true;
         }
         else{
             // Enable the Chat head Button

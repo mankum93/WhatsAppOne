@@ -7,7 +7,7 @@
     android:id="@+id/id_notification_grant_prompt"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:text="@string/notification_permission_text"
+    android:text="@string/permission_text"
     android:gravity="center"
     android:textSize="20sp"
     android:layout_marginLeft="8dp"

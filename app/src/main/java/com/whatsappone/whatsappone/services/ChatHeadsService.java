@@ -15,9 +15,11 @@ import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -173,6 +175,75 @@ public class ChatHeadsService extends Service{
                 mChatBubbleLayout.setVisibility(View.GONE);
             }
         });
+
+        // We need a touch listener for moving the Bubble around
+        /*mChatBubbleLayout.setOnTouchListener(new View.OnTouchListener() {
+
+            private int initialX;
+            private int initialY;
+            private float initialTouchX;
+            private float initialTouchY;
+
+            private int _xDelta;
+            private int _yDelta;
+
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+
+                if (v.getId() != R.id.id_chat_bubble_layout) return false;
+
+                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) mChatBubbleLayout.getLayoutParams();
+
+                switch (event.getAction()) {
+
+                    case MotionEvent.ACTION_DOWN:
+
+                        //remember the initial position.
+                        initialTouchX = (int) event.getRawX();
+                        initialTouchY = (int) event.getRawY();
+                        return true;
+
+                    case MotionEvent.ACTION_UP:
+                        int Xdiff = (int) (event.getRawX() - initialTouchX);
+                        int Ydiff = (int) (event.getRawY() - initialTouchY);
+
+
+                        //The check for Xdiff <10 && YDiff< 10 because sometime elements moves a little while clicking.
+                        //So that is click event.
+                        *//*if (Xdiff < 10 && Ydiff < 10) {
+                            if (isViewCollapsed()) {
+                                //When user clicks on the image view of the collapsed layout,
+                                //visibility of the collapsed layout will be changed to "View.GONE"
+                                //and expanded view will become visible.
+                                collapsedView.setVisibility(View.GONE);
+                                expandedView.setVisibility(View.VISIBLE);
+                            }
+                        }*//*
+                        return false;
+                    case MotionEvent.ACTION_MOVE:
+                        //Calculate the X and Y coordinates of the view.
+
+                        *//*int x = (int)(event.getRawX() - initialTouchX);
+                        params.topMargin = Y - _yDelta;*//*
+                        *//*params.rightMargin = -250;
+                        params.bottomMargin = -250;*//*
+                        //mChatHeadLayout.setLayoutParams(params);
+                        mChatHeadLayout.setX(event.getRawX() - initialTouchX);
+                        mChatHeadLayout.setY(event.getRawY() - initialTouchY);
+
+                        mChatWindowLayout.invalidate();
+
+                        //Update the layout with new X & Y coordinate
+                        //mWindowManager.updateViewLayout(mChatHeadLayout, params);
+                        return true;
+                }
+
+                // Return false in case we require a onClickListener to handle the
+                // event later too
+                return false;
+            }
+        });*/
     }
 
     @Override

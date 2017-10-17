@@ -1,21 +1,28 @@
 <resources>
     <string name="app_name">WhatsappOne</string>
 
-    <string name="notification_permission_text">
-        This App requires permission to access WhatsApp messages.
-        To grant the permission, click on Settings in the top right corner and Check the
-        permission checkbox for the App.
+    <string name="permission_text">
+        This App requires permissions to access and display WhatsApp messages.
+        Tap on <b>Settings</b> in the top right corner to grant them.
     </string>
 
     <!-- Menu related -->
     <string name="title_settings">Settings</string>
 
-    <!-- Preference Screen Strings -->
+    <!-- Preference Screen -->
     <!-- Category Name -->
     <string name="pref_config">Permissions</string>
-    <!-- Preference item title -->
-    <string name="pref_config_setting">WhatsApp Message Notifications</string>
-    <!-- Summary of the preference -->
-    <string name="pref_config_setting_summary">The App requires permission to access and display WhatsApp messages. Tap to allow it on the Settings Page.</string>
+
+    <!-- Notification Listener Permission -->
+    <!-- Title for Notification Listener permission setting -->
+    <string name="pref_notification_listen_setting_title">WhatsApp Message Notifications</string>
+    <!-- Summary of Notification Listener permission setting -->
+    <string name="pref_notification_listen_setting_summary">Permission to access WhatsApp messages. Tap to allow it on the Settings Page.</string>
+
+    <!-- Draw Overlay Permission -->
+    <!-- Title for Notification Listener permission setting -->
+    <string name="pref_draw_overlay_setting_title">Show Chat Head</string>
+    <!-- Summary of Notification Listener permission setting -->
+    <string name="pref_draw_overlay_setting_summary">Permission to display the Chat Head over other screens. Tap to allow it on the Settings Page.</string>
 
 </resources>
