@@ -50,7 +50,8 @@ public class Util {
             for (String key : bundle.keySet()) {
                 Object value = bundle.get(key);
                 Log.d(TAG, String.format("%s %s (%s)", key,
-                        value.toString(), value.getClass().getName()));
+                        value == null ? null : value.toString(),
+                        value == null ? null : value.getClass().getName()));
             }
         }
     }
