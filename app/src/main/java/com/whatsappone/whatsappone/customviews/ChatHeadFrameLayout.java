@@ -15,6 +15,10 @@ import android.widget.FrameLayout;
  * Created by DJ on 10/16/2017.
  */
 
+/**
+ * A FrameLayout that intercepts the drag events but delegates the click events
+ * to the children
+ */
 public class ChatHeadFrameLayout extends FrameLayout {
 
     private static final String TAG = "ChatHeadFrameLayout";

@@ -131,6 +131,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showAppPreferences(){
-        startActivity(new Intent(this, WhatsappOnePreferenceActivity.class));
+        startActivity(new Intent(this, WhatsAppOnePreferenceActivity.class));
     }
 }

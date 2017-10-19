@@ -7,7 +7,7 @@ import android.provider.Settings;
 import android.support.annotation.RequiresApi;
 import android.util.Log;
 
-import com.whatsappone.whatsappone.services.WhatsappNotificationListenerService;
+import com.whatsappone.whatsappone.services.WhatsAppNotificationListenerService;
 
 /**
  * Created by DJ on 10/14/2017.
@@ -27,7 +27,7 @@ public class Util {
      */
     public static boolean haveNotificationAccessPermission(Context context){
 
-        ComponentName cn = new ComponentName(context, WhatsappNotificationListenerService.class);
+        ComponentName cn = new ComponentName(context, WhatsAppNotificationListenerService.class);
         String flat = Settings.Secure.getString(context.getContentResolver(), "enabled_notification_listeners");
         final boolean enabled = flat != null && flat.contains(cn.flattenToString());
 
@@ -53,6 +53,7 @@ public class Util {
                         value == null ? null : value.toString(),
                         value == null ? null : value.getClass().getName()));
             }
+            System.out.println("---------------------------------------------------END-------------------------------------------------");
         }
     }
 }

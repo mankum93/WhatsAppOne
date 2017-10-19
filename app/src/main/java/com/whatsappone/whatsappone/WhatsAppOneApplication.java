@@ -14,7 +14,7 @@ import com.whatsappone.whatsappone.database.ContactsDbHelper;
  * Created by DJ on 10/14/2017.
  */
 
-public class WhatsappOneApplication extends Application {
+public class WhatsAppOneApplication extends Application {
 
     // Use a single instance of Db throughout the Application. Don't forget to close
     // it.
@@ -33,16 +33,16 @@ public class WhatsappOneApplication extends Application {
 
         // Enable/disable components depending on the API level.
 
-        // For API level >= 19, enable the WhatsappNotificationListenerService
+        // For API level >= 19, enable the WhatsAppNotificationListenerService
         PackageManager pm  = getApplicationContext().getPackageManager();
         ComponentName componentName;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT){
             componentName = new ComponentName("com.whatsappone.whatsappone",
-                    "com.whatsappone.whatsappone.services.WhatsappNotificationListenerService");
+                    "com.whatsappone.whatsappone.services.WhatsAppNotificationListenerService");
         }
         else{
             componentName = new ComponentName("com.whatsappone.whatsappone",
-                    "com.whatsappone.whatsappone.services.WhatsappNotificationAccessibilityService");
+                    "com.whatsappone.whatsappone.services.WhatsAppNotificationAccessibilityService");
         }
         // Enable it.
         pm.setComponentEnabledSetting(componentName,

@@ -34,7 +34,7 @@ import model.WhatsAppMessage;
  * Note: This service uses reflection to retrieve the text - a solution developers
  * had to resort to due to unavailability of another mechanism.
  */
-public class WhatsappNotificationAccessibilityService extends AccessibilityService {
+public class WhatsAppNotificationAccessibilityService extends AccessibilityService {
 
 
     private static final String TAG = "AccessibilityService";

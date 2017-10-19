@@ -15,15 +15,13 @@ import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.whatsappone.whatsappone.WhatsappOneApplication;
+import com.whatsappone.whatsappone.WhatsAppOneApplication;
 import com.whatsappone.whatsappone.database.ContactsDbHelper;
 import com.whatsappone.whatsappone.util.DateTimeUtils;
 import com.whatsappone.whatsappone.R;
@@ -89,7 +87,7 @@ public class ChatHeadsService extends Service{
         super.onCreate();
 
         // Get the Single Db instance
-        db = ((WhatsappOneApplication) this.getApplication()).dbInstance;
+        db = ((WhatsAppOneApplication) this.getApplication()).dbInstance;
 
         mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 

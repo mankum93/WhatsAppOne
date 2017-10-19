@@ -61,7 +61,7 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
                     ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO + " NOT NULL " + "," +
                     ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_NAME + " NOT NULL " + "," +
                     ContactSchema.MessagesRecordsTable.cols.MESSAGE_BODY + "," +
-                    ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + " NOT NULL " + ")"
+                    ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + " NOT NULL  UNIQUE" + ")"
             );
             Log.d(TAG, "Contacts Messages Records table creation complete.");
         }

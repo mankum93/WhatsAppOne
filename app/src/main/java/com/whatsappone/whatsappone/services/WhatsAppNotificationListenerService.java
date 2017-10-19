@@ -8,9 +8,11 @@ import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.support.annotation.RequiresApi;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 
-import com.whatsappone.whatsappone.WhatsappOneApplication;
+import com.whatsappone.whatsappone.WhatsAppOneApplication;
 import com.whatsappone.whatsappone.database.ContactsDbHelper;
+import com.whatsappone.whatsappone.util.Util;
 
 import model.Contact;
 import model.WhatsAppMessage;
@@ -34,7 +36,9 @@ import static com.whatsappone.whatsappone.services.ChatHeadsService.EXTRA_NEW_ME
  * there is an AccessibilityService that tries fetching the messages from WhatsApp.
  */
 @RequiresApi(19)
-public class WhatsappNotificationListenerService extends NotificationListenerService {
+public class WhatsAppNotificationListenerService extends NotificationListenerService {
+
+    private static final String TAG = "WhatsApNotifListService";
 
     private SQLiteDatabase db;
 
@@ -43,7 +47,7 @@ public class WhatsappNotificationListenerService extends NotificationListenerSer
         super.onCreate();
 
         // Get the Single Db instance
-        db = ((WhatsappOneApplication) this.getApplication()).dbInstance;
+        db = ((WhatsAppOneApplication) this.getApplication()).dbInstance;
     }
 
     @Override
@@ -53,6 +57,12 @@ public class WhatsappNotificationListenerService extends NotificationListenerSer
 
         // Only the WhatsApp messages are relevant
         if(packageName.contains("com.whatsapp")){
+
+            // DEBUG: Dump the notification
+            Log.d(TAG, sbn.toString());
+            Log.d(TAG, "--------------------------------------------------");
+            Log.d(TAG, "when" + sbn.getNotification().when);
+            Log.d(TAG, "--------------------------------------------------");
 
             WhatsAppMessage message = buildMessage(sbn);
 
@@ -86,7 +96,7 @@ public class WhatsappNotificationListenerService extends NotificationListenerSer
         String tag = statusBarNotification.getTag();
 
         Bundle extras = notification.extras;
-        //Util.listAllNotificationExtraKeysAndValues(extras);
+        Util.listAllNotificationExtraKeysAndValues(extras);
         // Could be a Name or a Number - If the sender's WhatsApp contact has a name,
         // we would get a name here. Otherwise, we would get a number.
         String title = extras.getString(Notification.EXTRA_TITLE);
