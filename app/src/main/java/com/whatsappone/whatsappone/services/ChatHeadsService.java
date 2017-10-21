@@ -8,10 +8,12 @@ import android.content.IntentFilter;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.PixelFormat;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -22,6 +24,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.whatsappone.whatsappone.WhatsAppOneApplication;
+import com.whatsappone.whatsappone.adapters.ItemTouchHelperAdapter;
 import com.whatsappone.whatsappone.database.ContactsDbHelper;
 import com.whatsappone.whatsappone.util.DateTimeUtils;
 import com.whatsappone.whatsappone.R;
@@ -54,7 +57,7 @@ public class ChatHeadsService extends Service{
     private View mChatWindow;
 
     /**
-     * To receive newly arrived messages.
+     * To receive newly arrived mMessages.
      */
     private BroadcastReceiver receiver;
 
@@ -87,7 +90,7 @@ public class ChatHeadsService extends Service{
         super.onCreate();
 
         // Get the Single Db instance
-        db = ((WhatsAppOneApplication) this.getApplication()).dbInstance;
+        db = WhatsAppOneApplication.dbInstance;
 
         mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
@@ -107,12 +110,18 @@ public class ChatHeadsService extends Service{
         // Set the Chat window height to 80% of the screen height
         recyclerView.getLayoutParams().height = (int)(deviceHeight * 0.8f);
         recyclerView.setLayoutManager(new LinearLayoutManager(mChatHeadLayout.getContext(), LinearLayoutManager.VERTICAL, false));
-        // Query the Db for already existing messages
+        // Query the Db for already existing mMessages
         List<WhatsAppMessage> existingMessages = ContactsDbHelper.getAllMessageRecordsFromDb(db, ContactsDbHelper.SORT_ORDER_DESC);
         mMessagesAdapter = new ChatMessagesRecyclerViewAdapter(existingMessages);
         recyclerView.setAdapter(mMessagesAdapter);
 
-        // Register a receiver to receive the newly arrived messages
+        // ItemTouchHelper to enable swipe-to-dismiss behavior
+        ItemTouchHelper.Callback callback =
+                new SimpleItemTouchHelperCallback(mMessagesAdapter);
+        ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
+        touchHelper.attachToRecyclerView(recyclerView);
+
+        // Register a receiver to receive the newly arrived mMessages
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_NEW_MESSAGE);
 
@@ -163,7 +172,7 @@ public class ChatHeadsService extends Service{
         });
 
         // Next, a listener for the chat head bubble - user would want to see the chat
-        // window with the list of messages received/read.
+        // window with the list of mMessages received/read.
         mChatBubbleImage = ((ImageView) mChatHeadLayout.findViewById(R.id.id_chat_bubble_image));
         mChatBubbleImage.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -192,31 +201,38 @@ public class ChatHeadsService extends Service{
         super.onDestroy();
     }
 
-    public static class ChatMessagesRecyclerViewAdapter extends RecyclerView.Adapter<ChatMessageViewHolder>{
 
-        private List<WhatsAppMessage> messages;
+
+
+    // RECYCLERVIEW RELATED CODE--------------------------------------------------------------------
+
+    public static class ChatMessagesRecyclerViewAdapter
+            extends RecyclerView.Adapter<ChatMessageViewHolder>
+            implements ItemTouchHelperAdapter{
+
+        private List<WhatsAppMessage> mMessages;
 
         public ChatMessagesRecyclerViewAdapter(@Nullable List<WhatsAppMessage> messages) {
 
             if(messages == null){
-                this.messages = new ArrayList<>();
+                this.mMessages = new ArrayList<>();
             }
             else{
-                this.messages = messages;
+                this.mMessages = messages;
             }
         }
 
         public void updateMessages(@Nullable List<WhatsAppMessage> messages){
-            int oldIndex = this.messages.size() == 0 ? 0 : this.messages.size() - 1;
+            int oldIndex = this.mMessages.size() == 0 ? 0 : this.mMessages.size() - 1;
             if(messages != null){
-                this.messages.addAll(0, messages);
+                this.mMessages.addAll(0, messages);
                 notifyItemRangeInserted(oldIndex, messages.size());
             }
         }
 
         public void updateMessage(@Nullable WhatsAppMessage message){
             if(message != null){
-                messages.add(0, message);
+                mMessages.add(0, message);
                 notifyItemInserted(0);
             }
         }
@@ -234,7 +250,7 @@ public class ChatHeadsService extends Service{
         @Override
         public void onBindViewHolder(ChatMessageViewHolder holder, int position) {
 
-            WhatsAppMessage messageToBeBound = messages.get(position);
+            WhatsAppMessage messageToBeBound = mMessages.get(position);
 
             holder.mContent.setText(messageToBeBound.getMessageText());
             holder.mSender.setText(messageToBeBound.getSenderName());
@@ -243,7 +259,21 @@ public class ChatHeadsService extends Service{
 
         @Override
         public int getItemCount() {
-            return messages.size();
+            return mMessages.size();
+        }
+
+
+        @Override
+        public void onItemMove(int fromPosition, int toPosition) {
+            // Currently, we don't support this movement
+        }
+
+        @Override
+        public void onItemDismiss(int position) {
+            // Remove the message item from the list, Db and update UI
+            ContactsDbHelper.removeMessageFromDb2(WhatsAppOneApplication.dbInstance, mMessages.get(position));
+            mMessages.remove(position);
+            notifyItemRemoved(position);
         }
     }
 
@@ -261,5 +291,47 @@ public class ChatHeadsService extends Service{
             mSender = ((TextView) itemView.findViewById(R.id.id_sender));
             mTime = ((TextView) itemView.findViewById(R.id.id_time));
         }
+    }
+
+    // SWIPE BEHAVIOR FOR RECYCLERVIEW--------------------------------------------------------------
+
+    // Courtesy of Mr. Paul: https://medium.com/@ipaulpro/drag-and-swipe-with-recyclerview-b9456d2b1aaf
+    public class SimpleItemTouchHelperCallback extends ItemTouchHelper.Callback {
+
+        private final ItemTouchHelperAdapter mAdapter;
+
+        public SimpleItemTouchHelperCallback(@NonNull ItemTouchHelperAdapter adapter) {
+            mAdapter = adapter;
+        }
+
+        @Override
+        public boolean isLongPressDragEnabled() {
+            return false;
+        }
+
+        @Override
+        public boolean isItemViewSwipeEnabled() {
+            return true;
+        }
+
+        @Override
+        public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
+            int dragFlags = ItemTouchHelper.UP | ItemTouchHelper.DOWN;
+            int swipeFlags = ItemTouchHelper.START | ItemTouchHelper.END;
+            return makeMovementFlags(dragFlags, swipeFlags);
+        }
+
+        @Override
+        public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder,
+                              RecyclerView.ViewHolder target) {
+            // We don't want the Drag behavior
+            return false;
+        }
+
+        @Override
+        public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+            mAdapter.onItemDismiss(viewHolder.getAdapterPosition());
+        }
+
     }
 }

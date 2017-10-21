@@ -36,7 +36,7 @@ import static com.whatsappone.whatsappone.services.ChatHeadsService.EXTRA_NEW_ME
  * there is an AccessibilityService that tries fetching the messages from WhatsApp.
  */
 @RequiresApi(19)
-public class WhatsAppNotificationListenerService extends NotificationListenerService {
+public class WhatsappNotificationListenerService extends NotificationListenerService {
 
     private static final String TAG = "WhatsApNotifListService";
 
@@ -47,7 +47,7 @@ public class WhatsAppNotificationListenerService extends NotificationListenerSer
         super.onCreate();
 
         // Get the Single Db instance
-        db = ((WhatsAppOneApplication) this.getApplication()).dbInstance;
+        db = WhatsAppOneApplication.dbInstance;
     }
 
     @Override
@@ -59,22 +59,77 @@ public class WhatsAppNotificationListenerService extends NotificationListenerSer
         if(packageName.contains("com.whatsapp")){
 
             // DEBUG: Dump the notification
-            Log.d(TAG, sbn.toString());
-            Log.d(TAG, "--------------------------------------------------");
-            Log.d(TAG, "when" + sbn.getNotification().when);
-            Log.d(TAG, "--------------------------------------------------");
+            //if(BuildConfig.DEBUG){
+                Log.d(TAG, sbn.toString());
+                Log.d(TAG, "--------------------------------------------------");
+                Log.d(TAG, "when" + sbn.getNotification().when);
+                Log.d(TAG, "--------------------------------------------------");
+            //}
 
             WhatsAppMessage message = buildMessage(sbn);
 
             if(message != null){
+
                 // Build a Contact
                 Contact contact = buildContact(message);
 
-                // Write it to the Database and update the UI.
-                ContactsDbHelper.insertContactToDb(db, contact);
-                ContactsDbHelper.insertMessageToDb(db, message);
+                // Check if there is a Name with the Message
+                String str = message.getSenderName().replaceAll("[^0-9]","");
+                if(!str.equals(message.getPhoneNo())){
+                    // The name could have been deliberately set to a number but
+                    // wouldn't be a problem for us
 
-                // Update the UI; Send a Broadcast
+                    // Check if the Phone No is in Db for the Contact
+                    Contact cont = ContactsDbHelper.isContactPresentInDb(db, message.getPhoneNo());
+                    if(cont != null){
+                        // Does this Contact have a proper name?
+                        if(!cont.getContactName().equals(message.getSenderName())){
+                            // There is a new valid Name; update the Contacts table
+                            ContactsDbHelper.updateContactInDb(db, contact);
+                            // Also, update the Messages table to replace the Name with this
+                            // new/proper one instead of a number
+                            ContactsDbHelper.updateMessagesTableWithNewNameConditionally(db, message.getPhoneNo(), message.getSenderName());
+                            // TODO: Update the Cache(current UI) to reflect these changes
+                        }
+
+                    }
+                    else{
+                        // New Contact
+                        ContactsDbHelper.insertContactToDb(db, contact);
+                    }
+
+                }
+                else{
+                    // In case they are same, it's possible that the Contact was
+                    // changed in the following ways:
+                    // 1) User may have lost it
+                    // 2) User may have deliberately set the Name to Number(practically highly unlikely)
+                    //
+                    // Check the Db for an existing Contact and a valid
+                    // Name if there is one. In that case, set that Name for this message
+                    // before writing it to Db and displaying.
+                    Contact cont = ContactsDbHelper.isContactPresentInDb(db, message.getPhoneNo());
+                    if(cont != null){
+                        if(!cont.getContactPhoneNo().equals(cont.getContactName())){
+                            // Existing Contact. Valid Name.
+                            message.setSenderName(cont.getContactName());
+                        }
+                    }
+                }
+
+                // Write it to the Database and update the UI.
+
+                // Database
+
+                // If the message is an identical one(literally w.r.t to everything),
+                // check if it gets inserted in the Db successfully. If not, don't
+                // update the UI either.
+                if((ContactsDbHelper.insertMessageToDb(db, message)) == -1 ){
+                    // Error or CONFLICT_IGNORE
+                    return;
+                }
+
+                // Send a Broadcast; Update the UI
                 Intent intent = new Intent(ACTION_NEW_MESSAGE);
                 intent.putExtra(EXTRA_NEW_MESSAGE, message);
                 LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
@@ -96,14 +151,19 @@ public class WhatsAppNotificationListenerService extends NotificationListenerSer
         String tag = statusBarNotification.getTag();
 
         Bundle extras = notification.extras;
-        Util.listAllNotificationExtraKeysAndValues(extras);
+
+        // DEBUG: Dump the Notification extra {key, value} pairs.
+        //if(BuildConfig.DEBUG){
+            Util.listAllNotificationExtraKeysAndValues(extras);
+        //}
+
         // Could be a Name or a Number - If the sender's WhatsApp contact has a name,
         // we would get a name here. Otherwise, we would get a number.
         String title = extras.getString(Notification.EXTRA_TITLE);
 
         // Before doing any processing on the Title, there is an edge case where the notification
         // received is from the company, WhatsApp. Ignore in that case.
-        if(title == null || title.equals("WhatsApp") || tag == null){
+        if(tag == null || title == null || title.equals("WhatsApp")){
             return null;
         }
 

@@ -18,8 +18,8 @@ public class WhatsAppOneApplication extends Application {
 
     // Use a single instance of Db throughout the Application. Don't forget to close
     // it.
-    private ContactsDbHelper dbHelper;
-    public SQLiteDatabase dbInstance;
+    public static ContactsDbHelper dbHelper;
+    public static SQLiteDatabase dbInstance;
 
     @Override
     public void onCreate() {
@@ -33,12 +33,12 @@ public class WhatsAppOneApplication extends Application {
 
         // Enable/disable components depending on the API level.
 
-        // For API level >= 19, enable the WhatsAppNotificationListenerService
+        // For API level >= 19, enable the WhatsappNotificationListenerService
         PackageManager pm  = getApplicationContext().getPackageManager();
         ComponentName componentName;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT){
             componentName = new ComponentName("com.whatsappone.whatsappone",
-                    "com.whatsappone.whatsappone.services.WhatsAppNotificationListenerService");
+                    "com.whatsappone.whatsappone.services.WhatsappNotificationListenerService");
         }
         else{
             componentName = new ComponentName("com.whatsappone.whatsappone",

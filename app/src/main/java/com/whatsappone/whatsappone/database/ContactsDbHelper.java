@@ -61,7 +61,9 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
                     ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO + " NOT NULL " + "," +
                     ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_NAME + " NOT NULL " + "," +
                     ContactSchema.MessagesRecordsTable.cols.MESSAGE_BODY + "," +
-                    ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + " NOT NULL  UNIQUE" + ")"
+                    ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + " NOT NULL  UNIQUE" +
+                    ", " + "PRIMARY KEY (" + ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO + "," +
+                    ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + ")" + ")"
             );
             Log.d(TAG, "Contacts Messages Records table creation complete.");
         }
@@ -118,13 +120,17 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
                 ContactSchema.ContactTable.cols.CONTACT_PHONE_NO + " = ? ", new String[]{contact.getContactPhoneNo()});
     }
 
+    public static void updateMessagesTableWithNewNameConditionally(SQLiteDatabase database, String phoneNo, String newName){
+        ContentValues values = new ContentValues();
+        values.put(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_NAME, newName);
+        database.update(ContactSchema.MessagesRecordsTable.NAME, values, " WHERE " +
+                ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO + " = ? ", new String[]{phoneNo});
+    }
+
     //--------------------------------------------------------------------------------------------------------------------------
 
-    public static void insertMessageToDb(SQLiteDatabase db, WhatsAppMessage message){
-        if(!isExistingTable(db, ContactSchema.MessagesRecordsTable.NAME)){
-            createMessageRecordsTable(db);
-        }
-        db.insertOrThrow(ContactSchema.MessagesRecordsTable.NAME, null, getContentValues(message));
+    public static long insertMessageToDb(SQLiteDatabase db, WhatsAppMessage message){
+        return db.insertWithOnConflict(ContactSchema.MessagesRecordsTable.NAME, null, getContentValues(message), SQLiteDatabase.CONFLICT_IGNORE);
     }
 
     public static void updateMessageToDb(SQLiteDatabase database, WhatsAppMessage message){
@@ -134,6 +140,27 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
                 ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO + " = ? ", new String[]{message.getPhoneNo()});
     }
 
+    public static int removeMessageFromDb(SQLiteDatabase db, WhatsAppMessage message){
+        return db.delete(ContactSchema.MessagesRecordsTable.NAME, ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO + " = ? " +
+                " AND " + ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + " = ? ", new String[]{message.getPhoneNo(), Long.toString(message.getMessageTimeMillis())});
+    }
+
+    public static void removeMessageFromDb2(SQLiteDatabase db, WhatsAppMessage message){
+        db.execSQL("DELETE FROM " + ContactSchema.MessagesRecordsTable.NAME +
+                " WHERE " + ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO + " = ? " +
+                " AND " + ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + " = ? ", new Object[]{message.getPhoneNo(), message.getMessageTimeMillis()});
+    }
+
+    public static int removeMessagesFromDb(SQLiteDatabase db, List<WhatsAppMessage> messages){
+        int affectedRowCount = 0;
+        for(int i = 0; i < messages.size(); i++){
+            affectedRowCount += db.delete(ContactSchema.MessagesRecordsTable.NAME, ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO + " = ? " +
+                    " AND " + ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + " = ? ", new String[]{messages.get(i).getPhoneNo(), String.valueOf(messages.get(i).getMessageTimeMillis())});
+        }
+        return affectedRowCount;
+    }
+
+    //----------------------------------------------------------------------------------------------
 
     public static boolean isExistingTable(SQLiteDatabase db, String tableName){
 
@@ -153,6 +180,30 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
             }
         }
         return false;
+    }
+
+    public static Contact isContactPresentInDb(SQLiteDatabase db, String phoneNo){
+
+        Cursor c = null;
+        try{
+            c = db.rawQuery("SELECT * FROM " + ContactSchema.ContactTable.NAME +
+                    " WHERE " + ContactSchema.ContactTable.cols.CONTACT_PHONE_NO +
+                    " = ? ", new String[]{phoneNo});
+
+            if(c.moveToFirst()){
+                Contact contact = new Contact(c.getString(c.getColumnIndex(ContactSchema.ContactTable.cols.CONTACT_PHONE_NO)),
+                        c.getString(c.getColumnIndex(ContactSchema.ContactTable.cols.CONTACT_NAME)));
+
+                return contact;
+            }
+        }finally {
+            if(c != null){
+                c.close();
+            }
+        }
+
+
+        return null;
     }
 
     // READ------------------------------------------------------------------------------------------------------------
@@ -210,8 +261,8 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
                 messages = new ArrayList<>(cMsg.getCount());
 
                 do{
-                    WhatsAppMessage message = new WhatsAppMessage(cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO)),
-                            cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_NAME)),
+                    WhatsAppMessage message = new WhatsAppMessage(cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_NAME)),
+                            cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO)),
                             cMsg.getLong(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP)),
                             cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_BODY)));
 
@@ -285,8 +336,8 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
                 messages = new ArrayList<>(cMsg.getCount());
 
                 do{
-                    WhatsAppMessage message = new WhatsAppMessage(cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO)),
-                            cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_NAME)),
+                    WhatsAppMessage message = new WhatsAppMessage(cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_NAME)),
+                            cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO)),
                             cMsg.getLong(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP)),
                             cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_BODY)));
 
@@ -453,8 +504,8 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
                     }
 
                     // Create a Message
-                    message = new WhatsAppMessage(c.getString(c.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO)),
-                            c.getString(c.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_NAME)),
+                    message = new WhatsAppMessage(c.getString(c.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_NAME)),
+                            c.getString(c.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO)),
                             c.getLong(c.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP)),
                             c.getString(c.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_BODY)));
 
