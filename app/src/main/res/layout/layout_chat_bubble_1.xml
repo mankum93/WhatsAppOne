@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+<com.whatsappone.whatsappone.customviews.ChatHeadFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
 
     <!--Chat Window Layout-->
     <FrameLayout
         android:id="@+id/id_chat_window_layout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginRight="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginTop="8dp"
         android:layout_marginBottom="8dp"
-        android:layout_gravity="center_vertical"
+        android:layout_gravity="center"
         android:visibility="gone"
         >
 
@@ -48,7 +48,7 @@
 
 
     <!--Chat Bubble View-->
-    <com.whatsappone.whatsappone.customviews.ChatHeadFrameLayout
+    <com.whatsappone.whatsappone.customviews.ChatHeadBubbleFrameLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -81,6 +81,6 @@
             android:layout_gravity="top|end"
             app:srcCompat="@drawable/close_icon"/>
 
-    </com.whatsappone.whatsappone.customviews.ChatHeadFrameLayout>
+    </com.whatsappone.whatsappone.customviews.ChatHeadBubbleFrameLayout>
 
-</FrameLayout>
+</com.whatsappone.whatsappone.customviews.ChatHeadFrameLayout>

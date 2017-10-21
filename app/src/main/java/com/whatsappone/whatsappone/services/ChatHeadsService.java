@@ -59,7 +59,7 @@ public class ChatHeadsService extends Service{
     /**
      * To receive newly arrived mMessages.
      */
-    private BroadcastReceiver receiver;
+    private BroadcastReceiver mReceiver;
 
 
     /**
@@ -69,7 +69,7 @@ public class ChatHeadsService extends Service{
     private int mActionBarHeight;
     private View mChatWindowLayout;
     private ImageView mChatBubbleImage;
-    private RecyclerView recyclerView;
+    private RecyclerView mRecyclerView;
     private ChatMessagesRecyclerViewAdapter mMessagesAdapter;
     private ImageView mChatWindowCloseButtonImage;
     private View mChatBubbleLayout;
@@ -80,8 +80,11 @@ public class ChatHeadsService extends Service{
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         // Get the Status Bar height
-        this.mStatusBarHeight = intent.getIntExtra(EXTRA_STATUS_BAR_HEIGHT, (int)ViewUtils.dpToPx(this, 25));
-        this.mActionBarHeight = intent.getIntExtra(EXTRA_ACTION_BAR_HEIGHT, (int)ViewUtils.dpToPx(this, 56));
+        if(intent != null){
+            this.mStatusBarHeight = intent.getIntExtra(EXTRA_STATUS_BAR_HEIGHT, (int)ViewUtils.dpToPx(this, 25));
+            this.mActionBarHeight = intent.getIntExtra(EXTRA_ACTION_BAR_HEIGHT, (int)ViewUtils.dpToPx(this, 56));
+            positionChatHeadLayout();
+        }
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -106,46 +109,42 @@ public class ChatHeadsService extends Service{
         mChatBubbleLayout = mChatHeadLayout.findViewById(R.id.id_chat_bubble_layout);
 
         // Setup the RecyclerView
-        recyclerView = ((RecyclerView) mChatHeadLayout.findViewById(R.id.id_chat_window));
-        // Set the Chat window height to 80% of the screen height
-        recyclerView.getLayoutParams().height = (int)(deviceHeight * 0.8f);
-        recyclerView.setLayoutManager(new LinearLayoutManager(mChatHeadLayout.getContext(), LinearLayoutManager.VERTICAL, false));
+        mRecyclerView = ((RecyclerView) mChatHeadLayout.findViewById(R.id.id_chat_window));
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(mChatHeadLayout.getContext(), LinearLayoutManager.VERTICAL, false));
         // Query the Db for already existing mMessages
         List<WhatsAppMessage> existingMessages = ContactsDbHelper.getAllMessageRecordsFromDb(db, ContactsDbHelper.SORT_ORDER_DESC);
         mMessagesAdapter = new ChatMessagesRecyclerViewAdapter(existingMessages);
-        recyclerView.setAdapter(mMessagesAdapter);
+        mRecyclerView.setAdapter(mMessagesAdapter);
 
         // ItemTouchHelper to enable swipe-to-dismiss behavior
         ItemTouchHelper.Callback callback =
                 new SimpleItemTouchHelperCallback(mMessagesAdapter);
         ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
-        touchHelper.attachToRecyclerView(recyclerView);
+        touchHelper.attachToRecyclerView(mRecyclerView);
 
-        // Register a receiver to receive the newly arrived mMessages
+        // Register a mReceiver to receive the newly arrived mMessages
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_NEW_MESSAGE);
 
-        receiver = new BroadcastReceiver() {
+        mReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 mMessagesAdapter.updateMessage((WhatsAppMessage) intent.getParcelableExtra(EXTRA_NEW_MESSAGE));
             }
         };
-        LocalBroadcastManager.getInstance(this).registerReceiver(receiver, filter);
+        LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, filter);
 
         //Add the view to the window.
         final WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
+                WindowManager.LayoutParams.TYPE_PHONE,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
                 PixelFormat.TRANSLUCENT);
 
-        //Specify the view position to be below the Status Bar and Action Bar by 20dp
-        int positionY = mStatusBarHeight + mActionBarHeight + (int)ViewUtils.dpToPx(this, 20);
-        params.gravity = Gravity.TOP | Gravity.END;
-        params.x = 0;
-        params.y = positionY;
+        // Set the Chat window height to 80% of the screen height
+        mChatWindowLayout.getLayoutParams().height = (int)(deviceHeight * 0.8f);
+        mChatWindowLayout.getLayoutParams().width = (int)(deviceWidth * 0.9f);
 
         //Add the view to the window
         mWindowManager.addView(mChatHeadLayout, params);
@@ -185,6 +184,12 @@ public class ChatHeadsService extends Service{
 
     }
 
+    private void positionChatHeadLayout(){
+        //Specify the view position to be below the Status Bar
+        int positionY = mActionBarHeight;
+        mChatBubbleLayout.setY(positionY);
+    }
+
     @Override
     public IBinder onBind(Intent intent) {
         return null;
@@ -192,9 +197,9 @@ public class ChatHeadsService extends Service{
 
     @Override
     public void onDestroy() {
-        if (receiver != null) {
-            LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
-            receiver = null;
+        if (mReceiver != null) {
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(mReceiver);
+            mReceiver = null;
         }
         if (mChatHeadLayout != null) mWindowManager.removeView(mChatHeadLayout);
 
@@ -271,7 +276,7 @@ public class ChatHeadsService extends Service{
         @Override
         public void onItemDismiss(int position) {
             // Remove the message item from the list, Db and update UI
-            ContactsDbHelper.removeMessageFromDb2(WhatsAppOneApplication.dbInstance, mMessages.get(position));
+            ContactsDbHelper.removeMessageFromDb(WhatsAppOneApplication.dbInstance, mMessages.get(position));
             mMessages.remove(position);
             notifyItemRemoved(position);
         }

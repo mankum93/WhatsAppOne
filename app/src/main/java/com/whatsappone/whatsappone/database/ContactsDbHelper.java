@@ -142,7 +142,7 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
 
     public static int removeMessageFromDb(SQLiteDatabase db, WhatsAppMessage message){
         return db.delete(ContactSchema.MessagesRecordsTable.NAME, ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO + " = ? " +
-                " AND " + ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + " = ? ", new String[]{message.getPhoneNo(), Long.toString(message.getMessageTimeMillis())});
+                " AND " + ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + " = CAST(? AS NUMBER) ", new String[]{message.getPhoneNo(), String.valueOf(message.getMessageTimeMillis())});
     }
 
     public static void removeMessageFromDb2(SQLiteDatabase db, WhatsAppMessage message){
