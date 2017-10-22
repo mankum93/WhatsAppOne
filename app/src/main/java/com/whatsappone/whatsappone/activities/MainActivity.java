@@ -17,9 +17,12 @@ import com.whatsappone.whatsappone.util.ViewUtils;
 import com.whatsappone.whatsappone.services.ChatHeadsService;
 
 import static com.whatsappone.whatsappone.services.ChatHeadsService.EXTRA_ACTION_BAR_HEIGHT;
+import static com.whatsappone.whatsappone.services.ChatHeadsService.EXTRA_FROM;
 import static com.whatsappone.whatsappone.services.ChatHeadsService.EXTRA_STATUS_BAR_HEIGHT;
 
 public class MainActivity extends AppCompatActivity {
+
+    public static final String FROM = "MainActivity";
 
     private boolean mIsPermissionPromptShowing = false;
     private ViewGroup root;
@@ -66,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 // Launch the Chat Head Service
                 Intent intent = new Intent(getApplicationContext(), ChatHeadsService.class);
+                intent.putExtra(EXTRA_FROM, FROM);
                 intent.putExtra(EXTRA_STATUS_BAR_HEIGHT, ViewUtils.getStatusBarHeight(MainActivity.this));
                 intent.putExtra(EXTRA_ACTION_BAR_HEIGHT, ViewUtils.getActionBarHeight(MainActivity.this, getTheme()));
                 startService(intent);

@@ -36,6 +36,12 @@ public class WhatsAppMessage implements Parcelable, Comparable<WhatsAppMessage> 
     private long messageTime;
 
     /**
+     * Flag indicating if the message has been read or not.
+     */
+    private boolean messageReadStatus;
+
+
+    /**
      * These 3 fields must hold validity(at least non null) for a valid construction.
      *
      * @param senderName Sender Name.
@@ -48,11 +54,19 @@ public class WhatsAppMessage implements Parcelable, Comparable<WhatsAppMessage> 
         this.messageTime = messageTime;
     }
 
-    public WhatsAppMessage(@NonNull String senderName, @NonNull String phoneNo, @NonNull long messageTime, @NonNull String messageBody) {
+    public WhatsAppMessage(@NonNull String senderName, @NonNull String phoneNo, long messageTime, @NonNull String messageBody) {
         this.senderName = senderName;
         this.phoneNo = phoneNo;
         this.messageTime = messageTime;
         this.messageText = messageBody;
+    }
+
+    public WhatsAppMessage(@NonNull String senderName, @NonNull String phoneNo, long messageTime, @NonNull String messageBody, boolean messageReadStatus) {
+        this.senderName = senderName;
+        this.phoneNo = phoneNo;
+        this.messageText = messageBody;
+        this.messageTime = messageTime;
+        this.messageReadStatus = messageReadStatus;
     }
 
     /**
@@ -79,6 +93,10 @@ public class WhatsAppMessage implements Parcelable, Comparable<WhatsAppMessage> 
         return messageTime;
     }
 
+    public boolean getMessageReadStatus() {
+        return messageReadStatus;
+    }
+
     public void setSenderName(String senderName) {
         this.senderName = senderName;
     }
@@ -93,6 +111,10 @@ public class WhatsAppMessage implements Parcelable, Comparable<WhatsAppMessage> 
 
     public void setMessageTime(long messageTime) {
         this.messageTime = messageTime;
+    }
+
+    public void setMessageReadStatus(boolean messageReadStatus) {
+        this.messageReadStatus = messageReadStatus;
     }
 
     // Not to be serialized/parcelabled
@@ -121,6 +143,7 @@ public class WhatsAppMessage implements Parcelable, Comparable<WhatsAppMessage> 
         phoneNo = in.readString();
         messageText = in.readString();
         messageTime = in.readLong();
+        messageReadStatus = in.readInt() == 1;
     }
 
     @Override
@@ -134,6 +157,7 @@ public class WhatsAppMessage implements Parcelable, Comparable<WhatsAppMessage> 
         dest.writeString(phoneNo);
         dest.writeString(messageText);
         dest.writeLong(messageTime);
+        dest.writeInt(messageReadStatus ? 1 : 0);
     }
 
     @SuppressWarnings("unused")

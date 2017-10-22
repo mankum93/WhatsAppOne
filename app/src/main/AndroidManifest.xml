@@ -33,7 +33,7 @@
         <!-- We are not explicitly setting a label as the Application Name deems fine
             as one in the present case -->
         <service
-            android:name=".services.WhatsappNotificationListenerService"
+            android:name=".services.WhatsAppNotificationListenerService"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
             android:enabled="false">
             <intent-filter>

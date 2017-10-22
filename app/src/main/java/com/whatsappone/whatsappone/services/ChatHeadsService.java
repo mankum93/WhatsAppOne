@@ -2,20 +2,16 @@ package com.whatsappone.whatsappone.services;
 
 import android.app.Service;
 import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.PixelFormat;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.DisplayMetrics;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -45,6 +41,9 @@ public class ChatHeadsService extends Service{
     public static final String EXTRA_ACTION_BAR_HEIGHT = "ChatHeadsService.ACTION_BAR_HEIGHT";
 
     public static final String EXTRA_NEW_MESSAGE = "ChatHeadsService.NEW_MESSAGE";
+    public static final String EXTRA_FROM = "ChatHeadsService.FROM";
+    public static final String EXTRA_UPDATE_NAME = "ChatHeadsService.UPDATE_NAME";
+    public static final String EXTRA_INSERT_MESSAGE = "ChatHeadsService.INSERT_MESSAGE";
 
     public static final String ACTION_NEW_MESSAGE = "com.whatsappone.whatsappone.ACTION_NEW_MESSAGE";
 
@@ -81,9 +80,35 @@ public class ChatHeadsService extends Service{
     public int onStartCommand(Intent intent, int flags, int startId) {
         // Get the Status Bar height
         if(intent != null){
-            this.mStatusBarHeight = intent.getIntExtra(EXTRA_STATUS_BAR_HEIGHT, (int)ViewUtils.dpToPx(this, 25));
-            this.mActionBarHeight = intent.getIntExtra(EXTRA_ACTION_BAR_HEIGHT, (int)ViewUtils.dpToPx(this, 56));
-            positionChatHeadLayout();
+
+            String intentSource = intent.getStringExtra(EXTRA_FROM);
+
+            if(intentSource.equals(WhatsAppNotificationListenerService.FROM)){
+
+                // Message is bound to be there
+                WhatsAppMessage message = (WhatsAppMessage) intent.getParcelableExtra(EXTRA_NEW_MESSAGE);
+
+                // Do we have to update the Name?
+                if(intent.getBooleanExtra(EXTRA_UPDATE_NAME, false)){
+                    ContactsDbHelper.updateMessagesTableWithNewNameConditionally(db, message.getPhoneNo(), message.getSenderName());
+                }
+                // Do we need to insert the Message?
+                if(intent.getBooleanExtra(EXTRA_INSERT_MESSAGE, false)){
+                    // Update the Message state as per the visibility of it
+                    // Is the chat window visible?
+                    if(mChatWindowLayout.getVisibility() == View.VISIBLE){
+                        message.setMessageReadStatus(true);
+                    }
+                    // Update the UI with the new Message
+                    mMessagesAdapter.updateMessage(message);
+
+                    // Write it to Db
+                    ContactsDbHelper.insertMessageToDb(db, message);
+
+                    // TODO: See that the message read status is only set after it has been
+                    // actually seen by the user
+                }
+            }
         }
         return super.onStartCommand(intent, flags, startId);
     }
@@ -91,6 +116,10 @@ public class ChatHeadsService extends Service{
     @Override
     public void onCreate() {
         super.onCreate();
+
+        // Get the Status Bar and Action Bar height
+        mStatusBarHeight = ViewUtils.getStatusBarHeight(this);
+        mActionBarHeight = ViewUtils.getActionBarHeight(this, getTheme());
 
         // Get the Single Db instance
         db = WhatsAppOneApplication.dbInstance;
@@ -123,7 +152,7 @@ public class ChatHeadsService extends Service{
         touchHelper.attachToRecyclerView(mRecyclerView);
 
         // Register a mReceiver to receive the newly arrived mMessages
-        IntentFilter filter = new IntentFilter();
+        /*IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_NEW_MESSAGE);
 
         mReceiver = new BroadcastReceiver() {
@@ -132,7 +161,7 @@ public class ChatHeadsService extends Service{
                 mMessagesAdapter.updateMessage((WhatsAppMessage) intent.getParcelableExtra(EXTRA_NEW_MESSAGE));
             }
         };
-        LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, filter);
+        LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, filter);*/
 
         //Add the view to the window.
         final WindowManager.LayoutParams params = new WindowManager.LayoutParams(
@@ -197,10 +226,10 @@ public class ChatHeadsService extends Service{
 
     @Override
     public void onDestroy() {
-        if (mReceiver != null) {
+        /*if (mReceiver != null) {
             LocalBroadcastManager.getInstance(this).unregisterReceiver(mReceiver);
             mReceiver = null;
-        }
+        }*/
         if (mChatHeadLayout != null) mWindowManager.removeView(mChatHeadLayout);
 
         super.onDestroy();
@@ -256,6 +285,12 @@ public class ChatHeadsService extends Service{
         public void onBindViewHolder(ChatMessageViewHolder holder, int position) {
 
             WhatsAppMessage messageToBeBound = mMessages.get(position);
+
+            // Is the message a new one?
+            if(messageToBeBound.getMessageReadStatus()){
+                // Set the background color to reflect that
+                holder.itemView.setBackgroundResource(R.drawable.rounded_shape_6);
+            }
 
             holder.mContent.setText(messageToBeBound.getMessageText());
             holder.mSender.setText(messageToBeBound.getSenderName());

@@ -61,8 +61,9 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
                     ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO + " NOT NULL " + "," +
                     ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_NAME + " NOT NULL " + "," +
                     ContactSchema.MessagesRecordsTable.cols.MESSAGE_BODY + "," +
-                    ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + " NOT NULL  UNIQUE" +
-                    ", " + "PRIMARY KEY (" + ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO + "," +
+                    ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + " NOT NULL " + "," +
+                    ContactSchema.MessagesRecordsTable.cols.MESSAGE_READ_STATUS + " NOT NULL " + "," +
+                    " PRIMARY KEY (" + ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO + "," +
                     ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + ")" + ")"
             );
             Log.d(TAG, "Contacts Messages Records table creation complete.");
@@ -88,6 +89,7 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
         contentValues.put(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_NAME, message.getSenderName());
         contentValues.put(ContactSchema.MessagesRecordsTable.cols.MESSAGE_BODY, message.getMessageText());
         contentValues.put(ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP, message.getMessageTimeMillis());
+        contentValues.put(ContactSchema.MessagesRecordsTable.cols.MESSAGE_READ_STATUS, message.getMessageReadStatus() ? 1 : 0);
 
         return contentValues;
     }
@@ -206,6 +208,27 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
         return null;
     }
 
+    public static boolean isMessagePresentInDb(SQLiteDatabase db, WhatsAppMessage message){
+        Cursor c = null;
+        try{
+            c = db.rawQuery("SELECT * FROM " + ContactSchema.MessagesRecordsTable.NAME +
+                    " WHERE " + ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO + " = ? " +
+                    " AND " + ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + " = CAST(? AS NUMBER)",
+                    new String[]{message.getPhoneNo(), String.valueOf(message.getMessageTimeStamp())});
+
+            if(c.getCount() > 0){
+                return true;
+            }
+        }finally {
+            if(c != null){
+                c.close();
+            }
+        }
+
+
+        return false;
+    }
+
     // READ------------------------------------------------------------------------------------------------------------
 
     public static final int SORT_ORDER_ASC = 0x002;
@@ -264,7 +287,8 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
                     WhatsAppMessage message = new WhatsAppMessage(cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_NAME)),
                             cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO)),
                             cMsg.getLong(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP)),
-                            cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_BODY)));
+                            cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_BODY)),
+                            cMsg.getInt(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_READ_STATUS)) == 1);
 
                     // Add Message to the list
                     messages.add(message);
@@ -339,7 +363,8 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
                     WhatsAppMessage message = new WhatsAppMessage(cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_NAME)),
                             cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO)),
                             cMsg.getLong(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP)),
-                            cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_BODY)));
+                            cMsg.getString(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_BODY)),
+                            cMsg.getInt(cMsg.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_READ_STATUS)) == 1);
 
                     // Add Message to the list
                     messages.add(message);
@@ -507,7 +532,8 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
                     message = new WhatsAppMessage(c.getString(c.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_NAME)),
                             c.getString(c.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO)),
                             c.getLong(c.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP)),
-                            c.getString(c.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_BODY)));
+                            c.getString(c.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_BODY)),
+                            c.getInt(c.getColumnIndex(ContactSchema.MessagesRecordsTable.cols.MESSAGE_READ_STATUS)) == 1);
 
                     // Pair up this message with the contact
                     messagesAndContacts.add(new Pair<WhatsAppMessage, Contact>(message, contact));

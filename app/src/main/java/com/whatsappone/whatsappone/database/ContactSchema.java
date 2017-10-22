@@ -28,6 +28,7 @@ public class ContactSchema {
             public static final String MESSAGE_SENDER_NAME = "messageSenderName";
             public static final String MESSAGE_BODY = "messageBody";
             public static final String MESSAGE_TIMESTAMP = "messageTimestamp";
+            public static final String MESSAGE_READ_STATUS = "messageReadStatus";
         }
     }
 }
