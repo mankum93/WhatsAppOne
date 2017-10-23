@@ -1,10 +1,11 @@
 package com.whatsappone.whatsappone.services;
 
 import android.app.Service;
-import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.PixelFormat;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -27,6 +28,7 @@ import com.whatsappone.whatsappone.R;
 import com.whatsappone.whatsappone.util.ViewUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import model.WhatsAppMessage;
@@ -47,66 +49,89 @@ public class ChatHeadsService extends Service{
 
     public static final String ACTION_NEW_MESSAGE = "com.whatsappone.whatsappone.ACTION_NEW_MESSAGE";
 
+    public static final int STATUS_DB_WRITE_PENDING = 0x00;
+    public static final int STATUS_DB_UPDATE_PENDING = 0x01;
+    public static final int STATUS_DB_NO_ACTION = 0x02;
+
     private WindowManager mWindowManager;
-    private View mChatHeadLayout;
-    private View mChatBubbleCloseButton;
-
-    private SQLiteDatabase db;
-
-    private View mChatWindow;
 
     /**
-     * To receive newly arrived mMessages.
+     * Singleton instance of Db
      */
-    private BroadcastReceiver mReceiver;
+    private SQLiteDatabase db;
 
+    /**
+     * A worked Handler to be used to post Db related takss to background thread
+     */
+    private Handler mHandler;
 
     /**
      * Status bar height in px.
      */
     private int mStatusBarHeight;
+    /**
+     * Action bar height in px.
+     */
     private int mActionBarHeight;
+
+    /**
+     * View hierarchy
+     */
     private View mChatWindowLayout;
     private ImageView mChatBubbleImage;
-    private RecyclerView mRecyclerView;
-    private ChatMessagesRecyclerViewAdapter mMessagesAdapter;
     private ImageView mChatWindowCloseButtonImage;
     private View mChatBubbleLayout;
+    private View mChatHeadLayout;
+    private View mChatBubbleCloseButton;
 
-    public ChatHeadsService() {
-    }
+    private RecyclerView mRecyclerView;
+    private ChatMessagesRecyclerViewAdapter mMessagesAdapter;
+    private LinearLayoutManager mLayoutManager;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        // Get the Status Bar height
+
         if(intent != null){
 
             String intentSource = intent.getStringExtra(EXTRA_FROM);
 
             if(intentSource.equals(WhatsAppNotificationListenerService.FROM)){
 
-                // Message is bound to be there
-                WhatsAppMessage message = (WhatsAppMessage) intent.getParcelableExtra(EXTRA_NEW_MESSAGE);
+                // Message is bound to be there in any case
+                final WhatsAppMessage message = (WhatsAppMessage) intent.getParcelableExtra(EXTRA_NEW_MESSAGE);
 
                 // Do we have to update the Name?
                 if(intent.getBooleanExtra(EXTRA_UPDATE_NAME, false)){
                     ContactsDbHelper.updateMessagesTableWithNewNameConditionally(db, message.getPhoneNo(), message.getSenderName());
                 }
-                // Do we need to insert the Message?
+                // Do we need to insert/display the Message?
                 if(intent.getBooleanExtra(EXTRA_INSERT_MESSAGE, false)){
-                    // Update the Message state as per the visibility of it
-                    // Is the chat window visible?
-                    if(mChatWindowLayout.getVisibility() == View.VISIBLE){
-                        message.setMessageReadStatus(true);
+
+                    message.setMessageReadStatus(false);
+
+                    if(mRecyclerView.getVisibility() != View.VISIBLE){
+                        // If not visible, write to Db just like this
+                        // Later on, it shall be updated with new visibility
+                        mHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                // Write it to Db
+                                ContactsDbHelper.insertMessageToDb(db, message);
+                            }
+                        });
+                        // For now, just update the Adapter with new messages(not UI)
+                        mMessagesAdapter.updateMessageWithoutUI(message);
                     }
-                    // Update the UI with the new Message
-                    mMessagesAdapter.updateMessage(message);
+                    else{
+                        // It will be new for a while until the user has actually
+                        // seen it and then shall be transitioned to as read
+                        // Update the UI with the new Message
+                        mMessagesAdapter.updateMessage(message);
+                        // Force to scroll to the top position; notifyItemInserted()
+                        // mysteriously stopped working. This is a workaround for that
+                        mLayoutManager.scrollToPosition(0);
+                    }
 
-                    // Write it to Db
-                    ContactsDbHelper.insertMessageToDb(db, message);
-
-                    // TODO: See that the message read status is only set after it has been
-                    // actually seen by the user
                 }
             }
         }
@@ -124,6 +149,11 @@ public class ChatHeadsService extends Service{
         // Get the Single Db instance
         db = WhatsAppOneApplication.dbInstance;
 
+        // Prepare a worker thread to perform Db transactions
+        HandlerThread worker = new HandlerThread("worker");
+        worker.start();
+        mHandler = new Handler(worker.getLooper());
+
         mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
         DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -139,10 +169,11 @@ public class ChatHeadsService extends Service{
 
         // Setup the RecyclerView
         mRecyclerView = ((RecyclerView) mChatHeadLayout.findViewById(R.id.id_chat_window));
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(mChatHeadLayout.getContext(), LinearLayoutManager.VERTICAL, false));
+        mLayoutManager = new LinearLayoutManager(mChatHeadLayout.getContext(), LinearLayoutManager.VERTICAL, false);
+        mRecyclerView.setLayoutManager(mLayoutManager);
         // Query the Db for already existing mMessages
         List<WhatsAppMessage> existingMessages = ContactsDbHelper.getAllMessageRecordsFromDb(db, ContactsDbHelper.SORT_ORDER_DESC);
-        mMessagesAdapter = new ChatMessagesRecyclerViewAdapter(existingMessages);
+        mMessagesAdapter = new ChatMessagesRecyclerViewAdapter(existingMessages, mHandler, new Handler(getMainLooper()));
         mRecyclerView.setAdapter(mMessagesAdapter);
 
         // ItemTouchHelper to enable swipe-to-dismiss behavior
@@ -150,18 +181,6 @@ public class ChatHeadsService extends Service{
                 new SimpleItemTouchHelperCallback(mMessagesAdapter);
         ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
         touchHelper.attachToRecyclerView(mRecyclerView);
-
-        // Register a mReceiver to receive the newly arrived mMessages
-        /*IntentFilter filter = new IntentFilter();
-        filter.addAction(ACTION_NEW_MESSAGE);
-
-        mReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                mMessagesAdapter.updateMessage((WhatsAppMessage) intent.getParcelableExtra(EXTRA_NEW_MESSAGE));
-            }
-        };
-        LocalBroadcastManager.getInstance(this).registerReceiver(mReceiver, filter);*/
 
         //Add the view to the window.
         final WindowManager.LayoutParams params = new WindowManager.LayoutParams(
@@ -207,6 +226,7 @@ public class ChatHeadsService extends Service{
             public void onClick(View v) {
                 // Chat window is already inflated, bind it with data and make it visible.
                 mChatWindowLayout.setVisibility(View.VISIBLE);
+                mMessagesAdapter.notifyDataSetChanged();
                 mChatBubbleLayout.setVisibility(View.GONE);
             }
         });
@@ -226,10 +246,7 @@ public class ChatHeadsService extends Service{
 
     @Override
     public void onDestroy() {
-        /*if (mReceiver != null) {
-            LocalBroadcastManager.getInstance(this).unregisterReceiver(mReceiver);
-            mReceiver = null;
-        }*/
+
         if (mChatHeadLayout != null) mWindowManager.removeView(mChatHeadLayout);
 
         super.onDestroy();
@@ -240,20 +257,32 @@ public class ChatHeadsService extends Service{
 
     // RECYCLERVIEW RELATED CODE--------------------------------------------------------------------
 
-    public static class ChatMessagesRecyclerViewAdapter
-            extends RecyclerView.Adapter<ChatMessageViewHolder>
+    public static class ChatMessagesRecyclerViewAdapter extends RecyclerView.Adapter<ChatMessageViewHolder>
             implements ItemTouchHelperAdapter{
 
         private List<WhatsAppMessage> mMessages;
 
-        public ChatMessagesRecyclerViewAdapter(@Nullable List<WhatsAppMessage> messages) {
+        private Handler mHandler;
+        private Handler mMainHandler;
+
+        private List<Integer> mMessageDbWriteStatuses = new ArrayList<>();
+
+        public ChatMessagesRecyclerViewAdapter(@Nullable List<WhatsAppMessage> messages,
+                                               @NonNull Handler workerHandler,
+                                               @NonNull Handler mainHandler) {
 
             if(messages == null){
                 this.mMessages = new ArrayList<>();
             }
             else{
                 this.mMessages = messages;
+                if(!mMessages.isEmpty()){
+                    // Update the initial Db write statuses
+                    mMessageDbWriteStatuses.addAll(Collections.nCopies(mMessages.size(), STATUS_DB_NO_ACTION));
+                }
             }
+            mHandler = workerHandler;
+            mMainHandler = mainHandler;
         }
 
         public void updateMessages(@Nullable List<WhatsAppMessage> messages){
@@ -267,7 +296,17 @@ public class ChatHeadsService extends Service{
         public void updateMessage(@Nullable WhatsAppMessage message){
             if(message != null){
                 mMessages.add(0, message);
+                // Db write status
+                mMessageDbWriteStatuses.add(0, STATUS_DB_WRITE_PENDING);
                 notifyItemInserted(0);
+            }
+        }
+
+        public void updateMessageWithoutUI(@Nullable WhatsAppMessage message){
+            if(message != null){
+                mMessages.add(0, message);
+                // Db write status
+                mMessageDbWriteStatuses.add(0, STATUS_DB_UPDATE_PENDING);
             }
         }
 
@@ -282,14 +321,38 @@ public class ChatHeadsService extends Service{
         }
 
         @Override
-        public void onBindViewHolder(ChatMessageViewHolder holder, int position) {
+        public void onBindViewHolder(final ChatMessageViewHolder holder, final int position) {
 
-            WhatsAppMessage messageToBeBound = mMessages.get(position);
+            final WhatsAppMessage messageToBeBound = mMessages.get(position);
 
             // Is the message a new one?
-            if(messageToBeBound.getMessageReadStatus()){
+            if(!messageToBeBound.getMessageReadStatus()){
                 // Set the background color to reflect that
                 holder.itemView.setBackgroundResource(R.drawable.rounded_shape_6);
+
+                // Post this message to the Db with a proper Read status
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        messageToBeBound.setMessageReadStatus(true);
+                        // Update or insert to Db
+                        if(mMessageDbWriteStatuses.get(position) == STATUS_DB_UPDATE_PENDING){
+                            ContactsDbHelper.updateMessageToDb(WhatsAppOneApplication.dbInstance, messageToBeBound);
+                        }
+                        else if(mMessageDbWriteStatuses.get(position) == STATUS_DB_WRITE_PENDING){
+                            ContactsDbHelper.insertMessageToDb(WhatsAppOneApplication.dbInstance, messageToBeBound);
+                        }
+
+                        mMainHandler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                if(messageToBeBound.getMessageReadStatus()){
+                                    holder.itemView.setBackgroundResource(R.drawable.rounded_shape_5);
+                                }
+                            }
+                        }, 3000);
+                    }
+                });
             }
 
             holder.mContent.setText(messageToBeBound.getMessageText());
@@ -316,6 +379,14 @@ public class ChatHeadsService extends Service{
             notifyItemRemoved(position);
         }
     }
+
+    /*public static abstract class DbTask implements Runnable{
+
+        protected WhatsAppMessage message;
+
+        public DbTask(WhatsAppMessage message) {
+        }
+    }*/
 
     public static class ChatMessageViewHolder extends RecyclerView.ViewHolder{
 

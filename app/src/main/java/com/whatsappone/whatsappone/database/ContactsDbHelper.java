@@ -135,6 +135,26 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
         return db.insertWithOnConflict(ContactSchema.MessagesRecordsTable.NAME, null, getContentValues(message), SQLiteDatabase.CONFLICT_IGNORE);
     }
 
+    public static void insertOrUpdateMessageToDb(SQLiteDatabase db, WhatsAppMessage message){
+        if(isMessagePresentInDb(db, message)){
+            // Update
+            updateMessageToDb(db, message);
+        }
+        else{
+            // Insert
+            insertMessageToDb(db, message);
+        }
+    }
+
+    /*public static long insertOrUpdateMessageToDb(SQLiteDatabase db, WhatsAppMessage message){
+        db.execSQL("INSERT OR REPLACE INTO " + ContactSchema.MessagesRecordsTable.NAME + " ( " +
+                ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO + " , " + ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + " , " +
+                ContactSchema.MessagesRecordsTable.cols.MESSAGE_READ_STATUS + " ) " +
+        " VALUES " + " ( ? , ?, ? ) ", new String[]{message.getPhoneNo(), String.valueOf(message.getMessageTimeStamp()),
+                String.valueOf(message.getMessageReadStatus() ? 1 : 0)});
+        return db.insertWithOnConflict(ContactSchema.MessagesRecordsTable.NAME, null, getContentValues(message), SQLiteDatabase.CONFLICT_IGNORE);
+    }*/
+
     public static void updateMessageToDb(SQLiteDatabase database, WhatsAppMessage message){
         ContentValues values = getContentValues(message);
 
@@ -213,8 +233,8 @@ public class ContactsDbHelper extends SQLiteOpenHelper{
         try{
             c = db.rawQuery("SELECT * FROM " + ContactSchema.MessagesRecordsTable.NAME +
                     " WHERE " + ContactSchema.MessagesRecordsTable.cols.MESSAGE_SENDER_PHONE_NO + " = ? " +
-                    " AND " + ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + " = CAST(? AS NUMBER)",
-                    new String[]{message.getPhoneNo(), String.valueOf(message.getMessageTimeStamp())});
+                    " AND " + ContactSchema.MessagesRecordsTable.cols.MESSAGE_TIMESTAMP + " = CAST(? AS NUMBER) ",
+                    new String[]{message.getPhoneNo(), String.valueOf(message.getMessageTimeMillis())});
 
             if(c.getCount() > 0){
                 return true;

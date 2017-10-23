@@ -16,8 +16,9 @@ import com.whatsappone.whatsappone.database.ContactsDbHelper;
 
 public class WhatsAppOneApplication extends Application {
 
-    // Use a single instance of Db throughout the Application. Don't forget to close
-    // it.
+    // Use a single instance of Db throughout the Application. No need to worry about
+    // closing the connections. SQliteHelper takes care of closing all Db connections
+    // automatically -- this is one of the accepted practice
     public static ContactsDbHelper dbHelper;
     public static SQLiteDatabase dbInstance;
 

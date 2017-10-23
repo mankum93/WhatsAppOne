@@ -84,7 +84,6 @@ public class WhatsAppNotificationListenerService extends NotificationListenerSer
                     // Insert the Contact as well the message afresh
                     Contact contact = buildContact(message);
                     ContactsDbHelper.insertContactToDb(db, contact);
-                    // TODO: Ask the receiver to insert the message afresh
                     intent = new Intent(getApplicationContext(), ChatHeadsService.class);
                     intent.putExtra(EXTRA_FROM, FROM);
                     intent.putExtra(EXTRA_NEW_MESSAGE, message);
@@ -106,12 +105,11 @@ public class WhatsAppNotificationListenerService extends NotificationListenerSer
 
                         // Do we have a message duplicate?
                         if(!ContactsDbHelper.isMessagePresentInDb(db, message)){
+                            // Insert this message afresh.
                             intent = new Intent(getApplicationContext(), ChatHeadsService.class);
                             intent.putExtra(EXTRA_FROM, FROM);
                             intent.putExtra(EXTRA_NEW_MESSAGE, message);
                             intent.putExtra(EXTRA_INSERT_MESSAGE, true);
-                            // Insert this message afresh.
-                            // TODO: Ask the receiver to do the same
                         }
                         else{
                             return;
@@ -127,14 +125,13 @@ public class WhatsAppNotificationListenerService extends NotificationListenerSer
                         // Do we have a message duplicate?
                         if(ContactsDbHelper.isMessagePresentInDb(db, message)){
                             if(isNameAvailable){
+                                // At least, we have name to update. Just update
+                                // the name for all the previous messages
                                 intent = new Intent(getApplicationContext(), ChatHeadsService.class);
                                 intent.putExtra(EXTRA_FROM, FROM);
                                 intent.putExtra(EXTRA_UPDATE_NAME, true);
                                 intent.putExtra(EXTRA_NEW_MESSAGE, message);
                                 intent.putExtra(EXTRA_INSERT_MESSAGE, false);
-                                // At least, we have name to update. Just update
-                                // the name for all the previous messages
-                                // TODO: Ask the receiver to do the same
                             }
                             else{
                                 return;
@@ -149,15 +146,13 @@ public class WhatsAppNotificationListenerService extends NotificationListenerSer
                                 intent.putExtra(EXTRA_NEW_MESSAGE, message);
                                 intent.putExtra(EXTRA_UPDATE_NAME, true);
                                 intent.putExtra(EXTRA_INSERT_MESSAGE, true);
-                                // TODO: Ask the receiver to do the same
                             }
                             else{
+                                // Just insert this message as it is afresh
                                 intent = new Intent(getApplicationContext(), ChatHeadsService.class);
                                 intent.putExtra(EXTRA_FROM, FROM);
                                 intent.putExtra(EXTRA_NEW_MESSAGE, message);
                                 intent.putExtra(EXTRA_INSERT_MESSAGE, true);
-                                // Just insert this message as it is afresh
-                                // TODO: Ask the receiver to do the same
                             }
                         }
 
